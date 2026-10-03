@@ -1,0 +1,93 @@
+---
+import Menu from '@lucide/astro/icons/menu';
+
+const links = [
+  { href: '/index#sell-account', label: 'Sell an Account' },
+  { href: '/index#team-dashboard', label: 'Team Dashboard' },
+  { href: '/index#bots', label: 'Bot Network' },
+  { href: '/index#join', label: 'Join the Team' },
+  { href: '/index#faq', label: 'FAQ' },
+];
+---
+
+<header class="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+    <a href="/index" class="flex items-center gap-2.5">
+      <img src="/images/logo.png" alt="AI Elevate logo" class="h-9 w-9 rounded-lg object-cover" />
+      <span class="text-lg font-bold tracking-tight">AI <span class="text-primary">Elevate</span></span>
+    </a>
+
+    <nav class="hidden items-center gap-1 md:flex" aria-label="Main navigation">
+      {links.map((link) => (
+        <a
+          href={link.href}
+          class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          {link.label}
+        </a>
+      ))}
+      <button
+        type="button"
+        data-open-country
+        title="Country & Currency"
+        class="ml-1 inline-flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-sm font-medium hover:bg-secondary/70"
+      >
+        <img data-currency-flag src="https://flagcdn.com/w40/us.png" alt="United States" class="h-[14px] w-5 rounded-[2px] object-cover" />
+        <span data-currency-code>USD</span>
+      </button>
+      <a
+        href="/index#join"
+        class="ml-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+      >
+        Get Started
+      </a>
+    </nav>
+
+    <button
+      type="button"
+      class="inline-flex items-center justify-center rounded-md p-2 text-foreground md:hidden"
+      aria-label="Open menu"
+      aria-expanded="false"
+      data-menu-button
+    >
+      <Menu class="h-6 w-6" />
+    </button>
+  </div>
+
+  <div class="hidden border-t border-border bg-background px-4 pb-4 md:!hidden" data-mobile-menu>
+    <nav class="flex flex-col gap-1 pt-2" aria-label="Mobile navigation">
+      {links.map((link) => (
+        <a
+          href={link.href}
+          class="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+        >
+          {link.label}
+        </a>
+      ))}
+      <button
+        type="button"
+        data-open-country
+        class="mt-2 inline-flex items-center justify-center gap-2 rounded-md border border-border bg-secondary px-4 py-2.5 text-sm font-medium"
+      >
+        <img data-currency-flag src="https://flagcdn.com/w40/us.png" alt="United States" class="h-[14px] w-5 rounded-[2px] object-cover" />
+        Country &amp; Currency (<span data-currency-code>USD</span>)
+      </button>
+      <a
+        href="/index#join"
+        class="mt-2 rounded-md bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground"
+      >
+        Get Started
+      </a>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const menuButton = document.querySelector('[data-menu-button]');
+  const mobileMenu = document.querySelector('[data-mobile-menu]');
+  menuButton?.addEventListener('click', () => {
+    const isOpen = !mobileMenu?.classList.contains('hidden');
+    mobileMenu?.classList.toggle('hidden');
+    menuButton.setAttribute('aria-expanded', String(!isOpen));
+  });
+</script>
