@@ -7,12 +7,14 @@ import CountryCurrency from '../components/CountryCurrency.astro';
 interface Props {
   title?: string;
   description?: string;
+  noindex?: boolean;
 }
 
 const {
-  title = 'AI Elevate — Escrowed AI Account Exchange & Team Network',
+  title = 'AI Elevate — Account Offers & Team Membership',
   description =
-    'AI Elevate buys verified Outlier, Micro1, Mercor or Handshake AI accounts for $30, or offers a one-time $50 team membership and 90% of every task you complete.',
+    'Submit an AI account for a $30 manual offer review, or apply for the one-time $50 team membership. Approved memberships use secure hosted checkout.',
+  noindex = false,
 } = Astro.props;
 ---
 
@@ -23,6 +25,7 @@ const {
     <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
     {Astro.site && <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).toString()} />}
   </head>

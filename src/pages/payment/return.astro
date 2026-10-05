@@ -1,0 +1,42 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Membership payment status — AI Elevate">
+  <section class="mx-auto max-w-xl px-4 py-20 text-center">
+    <h1 class="text-3xl font-bold">Membership payment</h1>
+    <p data-payment-status role="status" aria-live="polite" class="mt-4 text-muted-foreground">Checking your payment status…</p>
+    <a data-dashboard-link href="/#team-dashboard" hidden class="mt-6 inline-flex rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground">Go to member dashboard</a>
+    <a href="/#join" class="mt-6 ml-3 inline-flex rounded-md border border-border px-5 py-3 text-sm font-semibold">Back to AI Elevate</a>
+  </section>
+</Layout>
+
+<script>
+  const statusElement = document.querySelector<HTMLElement>('[data-payment-status]');
+  const dashboardLink = document.querySelector<HTMLAnchorElement>('[data-dashboard-link]');
+  const reference = new URLSearchParams(window.location.search).get('reference');
+
+  if (!reference) {
+    if (statusElement) statusElement.textContent = 'No payment reference was returned. If you completed checkout, contact info@aielevategroup.top.';
+  } else {
+    fetch(`/api/paystack-verify?reference=${encodeURIComponent(reference)}`)
+      .then(async (response) => {
+        const result = await response.json().catch(() => null);
+        if (!response.ok && response.status !== 202) throw new Error(result?.error || 'Could not verify payment');
+        return result;
+      })
+      .then((result) => {
+        if (result.status === 'paid') {
+          if (statusElement) statusElement.textContent = 'Payment confirmed. Sign in or create your member account with the same email you used on your application to access the dashboard.';
+          if (dashboardLink) dashboardLink.hidden = false;
+        } else if (result.status === 'failed' && statusElement) {
+          statusElement.textContent = 'Payment was not completed. Return to the application page if you would like to try again.';
+        } else if (statusElement) {
+          statusElement.textContent = 'Payment is still processing. Refresh this page in a moment; membership activates after confirmation.';
+        }
+      })
+      .catch((error) => {
+        if (statusElement) statusElement.textContent = `${error.message}. Contact info@aielevategroup.top if you were charged.`;
+      });
+  }
+</script>

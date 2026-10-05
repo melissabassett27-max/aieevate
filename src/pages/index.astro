@@ -3,58 +3,38 @@ import Layout from '../layouts/Layout.astro';
 import TeamDashboard from '../components/TeamDashboard';
 import MemberAuth from '../components/MemberAuth';
 import BotVerifier from '../components/BotVerifier';
-import { Check, ShieldCheck, Lock, Bot, Banknote, ClipboardList, Star, Users, ArrowRight, AlertTriangle, BadgeCheck } from '@lucide/astro';
+import { Check, Bot, Banknote, ClipboardList, Star, Users, ArrowRight, AlertTriangle, BadgeCheck } from '@lucide/astro';
 
 const SELL_FORM_ID = 'sell-account-form';
 const JOIN_FORM_ID = 'team-application-form';
 
 const botFleet = [
   {
-    name: 'Intake bot',
-    stage: 'Buy an account for $30',
-    role: 'Captures your login through an encrypted intake, dedupes it against accounts already on file and opens the escrow deal.',
+    name: 'Account sale',
+    stage: '$30 offer · manual review',
+    role: 'Submit account details for human review. Do not submit your password. Accepted offers and seller payment are arranged manually.',
   },
   {
-    name: 'Verification bot',
-    stage: 'Escrow release',
-    role: 'Logs in from an isolated sandbox, reads the completed-task ledger, scans standing and releases escrow only on a clean pass.',
+    name: 'Team application',
+    stage: '$50 one-time membership',
+    role: 'An administrator reviews applications. Approved applicants receive a hosted checkout link; access activates after payment is verified.',
   },
   {
-    name: 'QA bot',
-    stage: 'Team dashboard',
-    role: 'Scores every task you complete on quality and speed, feeds the star ladder and decides how many accounts you get next cycle.',
+    name: 'Member dashboard',
+    stage: 'Paid memberships only',
+    role: 'Paid members can view their Supabase dashboard data. Account assignment, task tracking, and evaluations are not connected yet.',
   },
   {
-    name: 'Payout bot',
-    stage: 'Earnings',
-    role: 'Applies the 90/10 split automatically and queues weekly settlement in USDT or Bitcoin (BTC) to the wallet on file.',
+    name: 'Seller payment',
+    stage: 'Manual arrangement',
+    role: 'The site does not hold escrow or send seller payouts. If an offer is accepted, payment is arranged separately by the team.',
   },
 ];
 
 const demoBotChecks = [
-  { label: 'Sandbox boot', detail: 'clean browser fingerprint, no shared cookies' },
-  { label: 'Login test', detail: 'session opens on the target platform' },
-  { label: 'Task history scrape', detail: 'completed-task ledger read and hashed' },
-  { label: 'Standing scan', detail: 'flags, disputes and payout status checked' },
-  { label: 'Verdict', detail: 'pass or reject returned with reasons' },
-];
-
-const sellBotChecks = [
-  { label: 'Credentials received', detail: 'login encrypted and queued for the verifier' },
-  { label: 'Login test', detail: 'signing in from an isolated sandbox' },
-  { label: 'Task history', detail: 'reading the completed-task ledger' },
-  { label: 'Account standing', detail: 'no flags, no open disputes' },
-  { label: 'Escrow release', detail: '$30 released to your payout method' },
-];
-
-const joinBotChecks = [
-  { label: 'Application received', detail: 'name, email and country validated' },
-  { label: 'Identity screen', detail: 'no duplicate membership on file' },
-  { label: 'Experience match', detail: 'preferred tasks mapped to the right pool' },
-  { label: 'Assessment invite', detail: '15-minute Zara AI assessment email queued' },
-  { label: 'Onboarding session', detail: 'booking link sent within 10–20 minutes' },
-  { label: 'Payment readiness', detail: 'payment link queued — card, bank or mobile money' },
-  { label: 'Assignment reserved', detail: 'managed account held, ready on approval' },
+  { label: 'Sample application', detail: 'illustrative demo only' },
+  { label: 'Sample review', detail: 'no account is accessed or verified' },
+  { label: 'Sample decision', detail: 'no real records are changed' },
 ];
 
 const inputClass =
@@ -62,57 +42,57 @@ const inputClass =
 
 const labelClass = 'block text-sm font-medium mb-1.5';
 
-const escrowSteps = [
+const saleSteps = [
   {
     icon: ClipboardList,
-    title: '1. Submit your account',
-    body: 'Pick your platform — Outlier, Micro1, Mercor or Handshake AI — and hand over the login through our secure intake form.',
+    title: '1. Submit details',
+    body: 'Tell us which platform your account is on and provide contact and payout details. Never submit your password.',
   },
   {
-    icon: Lock,
-    title: '2. Funds go to escrow',
-    body: 'The moment you accept the deal, $30 is locked in escrow. It can\'t be withdrawn by either side while verification runs.',
+    icon: ClipboardList,
+    title: '2. Manual review',
+    body: 'The team reviews your submission. The website does not verify platform credentials or check account standing.',
   },
   {
-    icon: Bot,
-    title: '3. Bot verification',
-    body: 'Our bot logs in, confirms the account is legitimate: real task history, good standing, no flags, credentials working.',
+    icon: BadgeCheck,
+    title: '3. Offer decision',
+    body: 'If the team accepts the account, they contact you to confirm the offer and arrange the $30 seller payment.',
   },
   {
     icon: Banknote,
-    title: '4. Get your $30',
-    body: 'Verified? Escrow releases instantly to your PayPal, bank, Wise or USDT. If the bot rejects the account, escrow returns to us — you keep nothing, but risk nothing either.',
+    title: '4. Manual payment',
+    body: 'Seller payment is not processed by this site and is not held in escrow. No payment is due when you submit the form.',
   },
 ];
 
 const faqs = [
   {
-    q: 'How does the $30 account sale work?',
-    a: 'You submit your Outlier, Micro1, Mercor or Handshake AI login through the intake form. Once you accept the offer, $30 is placed in escrow. Our bot verifies the account — login works, task history is real, standing is clean — and the escrow releases $30 to your payout method. If verification fails, nothing changes hands.',
+    q: 'How does the $30 account offer work?',
+    a: 'Submit your account details for manual review. The form does not collect your password, verify the account, or take payment. If the team accepts the account, they contact you to confirm the $30 offer and arrange payment manually.',
   },
   {
-    q: 'What exactly does the bot check?',
-    a: 'Credential validity, completed-task history, account standing, absence of platform flags, and payout-method status on the account. Accounts that fail any check are rejected and escrow is returned.',
+    q: 'Does the website verify accounts automatically?',
+    a: 'No. Account review is manual; the interactive bot panel is only a sample simulation. The website does not log in to third-party platforms or hold escrow.',
   },
   {
     q: 'How does the $50 team membership work?',
-    a: 'It\'s a one-time payment — no subscriptions. You\'re assigned one managed account right away. As you complete tasks and our bots rate your work, you climb the star ladder and receive more accounts to manage.',
+    a: 'It is a one-time $50 fee, not a subscription. Applications are reviewed manually. After approval, the team sends a hosted checkout link; membership activates after payment verification. Account assignment is handled separately and is not automated yet.',
   },
   {
     q: 'How is the 90/10 split applied?',
-    a: 'Every task completed on an account you manage earns its full rate. 90% of that earning is credited to you; 10% comes to AI Elevate for escrow, bot evaluation, and account sourcing. You never pay the 10% out of pocket — it\'s deducted from gross task earnings.',
+    a: 'The 90/10 split is the stated team arrangement. Task tracking, calculation, and member payouts are not automated or connected to a payout provider in this app yet.',
   },
   {
     q: 'When do I get paid?',
-    a: 'Team member payouts are processed weekly (daily at 4★ and above) to PayPal, bank transfer, Wise, USDT or Bitcoin (BTC). Account-sale payouts release from escrow immediately after bot verification.',
+    a: 'Team payouts are not processed by this website. If an account-sale offer is accepted, the $30 seller payment is arranged manually; no escrow or automatic transfer is provided.',
   },
   {
     q: 'How do I pay the $50 team membership fee?',
-    a: 'The application form stores your details but does not collect or confirm payment. If your application is approved, payment instructions are provided separately. Online payment processing is not connected yet.',
+    a: 'After approval, the team creates a hosted $50 checkout link and sends it to you. Payment is confirmed server-side before membership is activated.',
   },
   {
     q: 'What happens if I submit a fake or duplicate account?',
-    a: 'Nothing good. Our verification bot checks credential validity, task history, standing and cross-references accounts already on file. Fake, borrowed, duplicate or stolen logins fail immediately — escrow is voided, you are paid nothing, and the account is permanently blocked from AI Elevate. Sell only accounts you genuinely own.',
+    a: 'Submit only accounts you own and are permitted to transfer. The website does not check credentials or detect duplicates automatically; the team reviews submissions manually.',
   },
 ];
 ---
@@ -123,49 +103,44 @@ const faqs = [
     <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 md:grid-cols-2 md:py-24">
       <div>
         <span class="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          <ShieldCheck class="h-3.5 w-3.5" /> Escrow-protected · Bot-verified
+          <ClipboardList class="h-3.5 w-3.5" /> Account review by the team
         </span>
         <span class="ml-2 inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground">
-          <span class="relative flex h-2 w-2">
-            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60"></span>
-            <span class="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
-          </span>
-          4 bots online
+          One-time membership · <span data-usd="50">$50</span>
         </span>
         <h1 class="mt-4 text-4xl font-bold tracking-tight md:text-5xl">
           Sell your AI training account for <span class="text-primary" data-usd="30">$30</span> — or join the team.
         </h1>
         <p class="mt-4 text-lg text-muted-foreground">
-          AI Elevate buys verified Outlier, Micro1, Mercor and Handshake AI accounts through bot-checked escrow.
-          Join the AI Elevate team for a one-time <span data-usd="50">$50</span>, manage accounts we assign you, and keep <strong class="text-foreground">90% of every task you complete</strong>.
+          Submit an account for manual review for a <span data-usd="30">$30</span> seller offer. Team membership costs <span data-usd="50">$50</span>; approved applicants receive a secure checkout link.
         </p>
         <div class="mt-6 flex flex-wrap gap-3">
-          <a href="/index#sell-account" class="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
+          <a href="#sell-account" class="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
             Sell my account for <span data-usd="30">$30</span> <ArrowRight class="h-4 w-4" />
           </a>
-          <a href="/index#join" class="inline-flex items-center gap-2 rounded-md border border-border bg-secondary px-5 py-3 text-sm font-semibold hover:bg-secondary/70">
+          <a href="#join" class="inline-flex items-center gap-2 rounded-md border border-border bg-secondary px-5 py-3 text-sm font-semibold hover:bg-secondary/70">
             Join the team — <span data-usd="50">$50</span>
           </a>
         </div>
         <dl class="mt-8 grid grid-cols-3 gap-4 text-center">
           <div class="rounded-lg border border-border bg-card p-3">
-            <dt class="text-xs text-muted-foreground">Accounts verified</dt>
-            <dd class="text-xl font-bold text-primary">3,140+</dd>
+            <dt class="text-xs text-muted-foreground">Account sale review</dt>
+            <dd class="text-xl font-bold text-primary">Manual</dd>
           </div>
           <div class="rounded-lg border border-border bg-card p-3">
-            <dt class="text-xs text-muted-foreground">Escrow paid out</dt>
-            <dd class="text-xl font-bold text-primary">$141k</dd>
+            <dt class="text-xs text-muted-foreground">Seller payment</dt>
+            <dd class="text-xl font-bold text-primary">Manual</dd>
           </div>
           <div class="rounded-lg border border-border bg-card p-3">
-            <dt class="text-xs text-muted-foreground">Active team members</dt>
-            <dd class="text-xl font-bold text-primary">860</dd>
+            <dt class="text-xs text-muted-foreground">Membership</dt>
+            <dd class="text-xl font-bold text-primary">After approval</dd>
           </div>
         </dl>
       </div>
       <div class="overflow-hidden rounded-2xl border border-border shadow-2xl">
         <img
           src="/images/hero-escrow.jpg"
-          alt="Escrow vault with verification checklist illustration"
+          alt="Illustration of an account review and membership workflow"
           class="h-full w-full object-cover"
           width="1264"
           height="848"
@@ -174,17 +149,16 @@ const faqs = [
     </div>
   </section>
 
-  <!-- Bot network -->
+  <!-- Application workflows -->
   <section id="bots" class="border-b border-border">
     <div class="mx-auto max-w-6xl px-4 py-16">
       <div class="text-center">
         <span class="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          <Bot class="h-3.5 w-3.5" /> Four bots · zero human hands on your login
+          <ClipboardList class="h-3.5 w-3.5" /> Manual review · no password collection
         </span>
-        <h2 class="mt-4 text-3xl font-bold tracking-tight">The bot network that runs AI Elevate</h2>
+        <h2 class="mt-4 text-3xl font-bold tracking-tight">How applications are handled</h2>
         <p class="mx-auto mt-2 max-w-2xl text-muted-foreground">
-          Every stage — intake, verification, task scoring and payout — is carried out by an automated agent, so it runs
-          the same way at 3am as at noon, and nobody ever sees your password.
+          Account-sale and membership applications are reviewed by the team. Account checks, assignment, task scoring, and payouts are not automated by this website.
         </p>
       </div>
       <div class="mt-10 grid gap-5 lg:grid-cols-3">
@@ -193,7 +167,7 @@ const faqs = [
             <div class="rounded-xl border border-border bg-card p-5">
               <div class="flex items-center gap-3">
                 <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
-                  <Bot class="h-5 w-5" />
+                  <ClipboardList class="h-5 w-5" />
                 </span>
                 <div>
                   <p class="font-semibold">{bot.name}</p>
@@ -207,27 +181,27 @@ const faqs = [
         <div class="lg:col-span-1">
           <BotVerifier
             client:visible
-            title="Live verification demo"
-            subtitle="The same agent that clears every account"
-            buttonLabel="Run the bot"
+            title="Sample review simulation"
+            subtitle="Illustrative only; no account is accessed"
+            buttonLabel="Run sample"
             checks={demoBotChecks}
-            resultTitle="Account passed — escrow would release now"
-            resultBody="On a real deal the verifier writes the pass to the escrow ledger and the $30 releases automatically. On a reject, escrow returns to us with the bot's reasons attached."
+            resultTitle="Sample complete"
+            resultBody="This demo does not access an account, create an escrow, or change an application. Actual submissions are reviewed manually."
           />
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Escrow flow -->
-  <section id="escrow" class="border-y border-border bg-card/50">
+  <!-- Account sale process -->
+  <section id="sale-process" class="border-y border-border bg-card/50">
     <div class="mx-auto max-w-6xl px-4 py-16">
-      <h2 class="text-center text-3xl font-bold tracking-tight">How the <span data-usd="30">$30</span> escrow works</h2>
+      <h2 class="text-center text-3xl font-bold tracking-tight">How the <span data-usd="30">$30</span> account offer works</h2>
       <p class="mx-auto mt-2 max-w-2xl text-center text-muted-foreground">
-        Neither side trusts the other — that's what the escrow and the bot are for. Money moves only when the account checks out.
+        Submissions are reviewed manually. This site does not hold funds in escrow or verify third-party account credentials.
       </p>
       <div class="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        {escrowSteps.map((step) => (
+        {saleSteps.map((step) => (
           <div class="rounded-xl border border-border bg-card p-5">
             <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/15 text-primary">
               <step.icon class="h-6 w-6" />
@@ -240,18 +214,18 @@ const faqs = [
     </div>
   </section>
 
-  <!-- Sell account wizard -->
+  <!-- Account sale application -->
   <section id="sell-account" class="mx-auto max-w-3xl px-4 py-16">
     <div class="text-center">
-      <h2 class="text-3xl font-bold tracking-tight">Sell your account — get <span data-usd="30">$30</span></h2>
+      <h2 class="text-3xl font-bold tracking-tight">Submit an account for a <span data-usd="30">$30</span> offer</h2>
       <p class="mt-2 text-muted-foreground">
-        Takes 2 minutes. Funds lock in escrow the moment you accept, and the bot releases them as soon as the account verifies.
+        The team reviews submissions manually. No payment is collected here; accepted seller payments are arranged manually.
       </p>
     </div>
 
-    <!-- Escrow status tracker -->
-    <div class="mt-8 grid grid-cols-4 gap-2 text-center" data-escrow-tracker>
-      {['Submit', 'In escrow', 'Bot check', '$30 paid'].map((label, i) => (
+    <!-- Application status tracker -->
+    <div class="mt-8 grid grid-cols-4 gap-2 text-center" data-process-tracker>
+      {['Submit', 'Review', 'Decision', 'Manual payment'].map((label, i) => (
         <div class="flex flex-col items-center gap-1.5">
           <div
             class={`flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold ${i === 0 ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-secondary text-muted-foreground'}`}
@@ -286,7 +260,7 @@ const faqs = [
           </div>
           <div class="mt-4 flex items-start gap-2.5 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
             <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" />
-            <span><strong>Genuine accounts only.</strong> Never submit fake, duplicate, borrowed or stolen logins. Our bot checks credentials against accounts already on file — fakes fail instantly, escrow is voided, you are paid nothing, and the account is permanently blocked.</span>
+            <span><strong>Submit only accounts you own and may transfer.</strong> The team reviews applications manually. Do not submit your account password or any login secret.</span>
           </div>
         </fieldset>
 
@@ -343,28 +317,27 @@ const faqs = [
                 <option>PayPal</option>
                 <option>Bank transfer</option>
                 <option>Wise</option>
-                <option>M-Pesa / mobile money</option>
               </select>
             </div>
           </div>
         </fieldset>
 
-        <!-- Step 3: escrow agreement -->
+        <!-- Step 3: review consent -->
         <fieldset data-step-panel data-step-index="2" hidden>
-          <legend class="text-lg font-semibold mb-4">Accept & lock escrow</legend>
+          <legend class="text-lg font-semibold mb-4">Review and seller payment terms</legend>
           <div class="rounded-lg border border-primary/30 bg-primary/10 p-4 text-sm">
-            <p class="flex items-center gap-2 font-semibold text-primary"><Lock class="h-4 w-4" /> Escrow summary</p>
+            <p class="flex items-center gap-2 font-semibold text-primary"><ClipboardList class="h-4 w-4" /> Before you submit</p>
             <ul class="mt-2 space-y-1 text-muted-foreground">
-              <li>• On submission, <strong class="text-foreground"><span data-usd="30">$30</span></strong> is reserved in escrow for this account.</li>
-              <li>• Our bot verifies the login, task history and standing — typically within 30 minutes.</li>
-              <li>• Verified → escrow releases <strong class="text-foreground"><span data-usd="30">$30</span></strong> to your payout method.</li>
-              <li>• Rejected → the deal is void; no transfer is completed and escrow returns to AI Elevate.</li>
+              <li>• This form stores an application; it does not collect payment or create escrow.</li>
+              <li>• The team reviews the account details manually; automated account verification is not available.</li>
+              <li>• If accepted, the team confirms the <strong class="text-foreground"><span data-usd="30">$30</span></strong> offer and arranges seller payment separately.</li>
+              <li>• Do not transfer account access until you have reviewed and accepted the final terms.</li>
             </ul>
           </div>
           <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-background p-4">
-            <input type="checkbox" name="escrow_agreement" required class="mt-0.5 h-4 w-4 accent-[var(--primary)]" />
+            <input type="checkbox" name="review_consent" required class="mt-0.5 h-4 w-4 accent-[var(--primary)]" />
             <span class="text-sm">
-              I own this account, I accept that full logins will be transferred after verification, and I agree to the escrow terms above.
+              I own this account, have permission to offer it, and understand that submission is not a sale, payment, or escrow agreement.
               <span class="text-destructive">*</span>
             </span>
           </label>
@@ -376,36 +349,36 @@ const faqs = [
           <span></span>
           <button type="button" data-nav="next" class="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90">Next <ArrowRight class="h-4 w-4" /></button>
           <button type="submit" data-submit hidden class="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90">
-            <Lock class="h-4 w-4" /> Submit & lock <span data-usd="30">$30</span> escrow
+            Submit for a <span data-usd="30">$30</span> offer review
           </button>
         </div>
       </form>
 
-      <!-- Success / escrow pipeline panel (sibling of the form) -->
+      <!-- Application confirmation -->
       <div id={`${SELL_FORM_ID}-success`} hidden class="mt-2">
         <div class="rounded-xl border border-primary/40 bg-primary/10 p-6">
           <p class="flex items-center gap-2 text-lg font-semibold text-primary">
             <Check class="h-5 w-5" /> Account details received
           </p>
           <p class="mt-2 text-sm text-muted-foreground">
-            Your account details are saved for review. Escrow, verification, and payouts are not connected yet.
+            Your account details are saved for manual review. No escrow or payment was created by this submission.
           </p>
           <ol class="mt-4 space-y-3 text-sm">
-            <li data-escrow-row="received" data-state="done" class="flex items-start gap-3">
+            <li data-process-row="received" data-state="done" class="flex items-start gap-3">
               <span data-escrow-icon class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">1</span>
               <span><strong>Details received</strong> — your application is stored for review.</span>
             </li>
-            <li data-escrow-row="escrow" data-state="pending" class="flex items-start gap-3">
+            <li data-process-row="review" data-state="pending" class="flex items-start gap-3">
               <span data-escrow-icon class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-border text-xs font-semibold text-muted-foreground">2</span>
-              <span><strong>Escrow setup</strong> — no payment has been collected or reserved.</span>
+              <span><strong>Team review</strong> — this is handled manually.</span>
             </li>
-            <li data-escrow-row="verify" data-state="pending" class="flex items-start gap-3">
+            <li data-process-row="offer" data-state="pending" class="flex items-start gap-3">
               <span data-escrow-icon class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-border text-xs font-semibold text-muted-foreground">3</span>
-              <span><strong>Account review</strong> — verification is not automated yet.</span>
+              <span><strong>Offer</strong> — if accepted, the team contacts you about the $30 offer.</span>
             </li>
-            <li data-escrow-row="paid" data-state="pending" class="flex items-start gap-3">
+            <li data-process-row="payment" data-state="pending" class="flex items-start gap-3">
               <span data-escrow-icon class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-border text-xs font-semibold text-muted-foreground">4</span>
-              <span><strong>Payout</strong> — no funds have been transferred.</span>
+              <span><strong>Seller payment</strong> — arranged manually only after acceptance.</span>
             </li>
           </ol>
           <p class="mt-4 rounded-lg border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground">
@@ -424,9 +397,9 @@ const faqs = [
       <h3 class="mt-2 text-xl font-bold tracking-tight">Rather not sell? Join the team for <span data-usd="50">$50</span></h3>
       <p class="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
         We'll give you your own account to manage, matched to your experience, and hand you more as the star rating from
-        our bots climbs. You keep 90% of every task you complete.
+        your application is reviewed. Account assignment and task tracking are handled separately and are not automated by this site.
       </p>
-      <a href="/index#join" class="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
+      <a href="#join" class="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
         Join the team for <span data-usd="50">$50</span> <ArrowRight class="h-4 w-4" />
       </a>
     </div>
@@ -439,11 +412,11 @@ const faqs = [
         <div>
           <h2 class="text-3xl font-bold tracking-tight">Team member dashboard</h2>
           <p class="mt-2 max-w-2xl text-muted-foreground">
-            What a <span data-usd="50">$50</span> member sees: assigned accounts, bot-rated work quality, the star ladder, and the 90/10 split applied automatically to every task.
+            The member dashboard is available after the <span data-usd="50">$50</span> membership payment is verified. Account assignment, task scoring, and payouts remain manual or unavailable.
           </p>
         </div>
         <span class="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs text-muted-foreground">
-          <Users class="h-3.5 w-3.5" /> Live for members · sample otherwise
+          <Users class="h-3.5 w-3.5" /> Paid access · sample otherwise
         </span>
       </div>
       <div class="mt-8">
@@ -461,25 +434,24 @@ const faqs = [
       <div>
         <h2 class="text-3xl font-bold tracking-tight">Join the team — <span class="text-primary" data-usd="50">$50</span>, once, forever</h2>
         <p class="mt-3 text-muted-foreground">
-          No subscriptions. One <span data-usd="50">$50</span> membership and you're in. We hand you a managed account on day one, and our bots keep
-          scoring your work — higher stars mean more accounts assigned and more earnings flowing your way.
+          No subscription. Submit an application for review; if approved, pay USD 50.00 through the checkout link the team sends you. Your bank may convert the charge or add fees. Payment confirmation activates dashboard access.
         </p>
         <ul class="mt-6 space-y-3 text-sm">
           <li class="flex items-start gap-3">
             <Star class="mt-0.5 h-5 w-5 shrink-0 text-chart-4" />
-            <span><strong>1 managed account immediately</strong> — ready to work from day one.</span>
+            <span><strong>Manual account assignment</strong> — assignments are not automated or guaranteed at signup.</span>
           </li>
           <li class="flex items-start gap-3">
             <Star class="mt-0.5 h-5 w-5 shrink-0 text-chart-4" />
-            <span><strong>Keep 90% of every task</strong> — the 10% platform fee comes out of gross earnings, never your pocket.</span>
+            <span><strong>Stated 90/10 earnings split</strong> — task tracking and payout calculations are not connected yet.</span>
           </li>
           <li class="flex items-start gap-3">
             <Star class="mt-0.5 h-5 w-5 shrink-0 text-chart-4" />
-            <span><strong>More accounts as you star up</strong> — up to 12 accounts at 5★ plus the team-lead track.</span>
+            <span><strong>Future account progression</strong> — star ratings and additional assignments are not active yet.</span>
           </li>
           <li class="flex items-start gap-3">
             <BadgeCheck class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <span><strong>Matched to you</strong> — your account is assigned based on your experience and the star rating our bots give your work.</span>
+            <span><strong>Application review</strong> — assignment decisions are made manually by the team.</span>
           </li>
         </ul>
 
@@ -497,7 +469,7 @@ const faqs = [
           <div class="rounded-lg border border-border bg-card p-3">
             <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">3</span>
             <p class="mt-2 text-sm font-semibold">Get an account</p>
-            <p class="mt-1 text-xs text-muted-foreground">Start earning 90%</p>
+            <p class="mt-1 text-xs text-muted-foreground">Access after verification</p>
           </div>
         </div>
       </div>
@@ -510,7 +482,7 @@ const faqs = [
           </div>
           <p class="mb-4 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
             <Banknote class="h-4 w-4 shrink-0" />
-            One-time <span data-usd="50">$50</span> membership fee — payment instructions are provided separately after application approval.
+            Apply first. If approved, the team sends a secure checkout link for the one-time USD 50 membership fee. Your bank or card issuer may convert the charge or add fees.
           </p>
           <div class="space-y-4">
             <div class="grid gap-4 sm:grid-cols-2">
@@ -553,7 +525,6 @@ const faqs = [
                   <option>PayPal</option>
                   <option>Bank transfer</option>
                   <option>Wise</option>
-                  <option>M-Pesa / mobile money</option>
                 </select>
               </div>
             </div>
@@ -595,40 +566,19 @@ const faqs = [
                 </select>
               </div>
             </div>
-            <div>
-              <label for="join_payment_pref" class={labelClass}>How you'd like to pay the <span data-usd="50">$50</span> <span class="text-destructive">*</span></label>
-              <select id="join_payment_pref" name="payment_preference" required class={inputClass}>
-                <option value="">Select payment option…</option>
-                <option>Debit / credit card</option>
-                <option>Bank transfer</option>
-                <option>M-Pesa / mobile money</option>
-                <option>USDT / stablecoin</option>
-              </select>
-            </div>
           </div>
           <button type="submit" class="mt-6 w-full rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
             Apply for <span data-usd="50">$50</span> membership
           </button>
-          <div class="mt-4 rounded-lg border border-dashed border-border bg-secondary/30 p-4">
-            <label for="join_cv" class={labelClass}>Attach your CV <span class="text-muted-foreground">(optional — PDF or Word)</span></label>
-            <input
-              id="join_cv"
-              data-cv-input
-              type="file"
-              accept=".pdf,.doc,.docx"
-              class="block w-full cursor-pointer rounded-md border border-input bg-background text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-l-md file:border-0 file:bg-primary file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-primary-foreground"
-            />
-            <p class="mt-1 text-xs text-muted-foreground" data-cv-name>No file selected.</p>
-          </div>
         </form>
           <div id={`${JOIN_FORM_ID}-success`} hidden class="mt-4 rounded-xl border border-primary/40 bg-primary/10 p-5 text-sm">
           <p class="flex items-center gap-2 font-semibold text-primary"><Check class="h-4 w-4" /> Application received for review</p>
           <ol class="mt-3 space-y-2 text-muted-foreground">
             <li class="flex items-start gap-2"><span class="font-semibold text-primary">1.</span> Your application details are stored for follow-up.</li>
-            <li class="flex items-start gap-2"><span class="font-semibold text-primary">2.</span> Review emails, assessment links, payment, and account assignment are not automated yet.</li>
+            <li class="flex items-start gap-2"><span class="font-semibold text-primary">2.</span> The team reviews applications manually and sends a checkout link to approved applicants.</li>
           </ol>
           <p class="mt-3 rounded-lg border border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
-            No payment is collected by this form. Review and onboarding workflows still need to be configured.
+            This form does not charge you. Dashboard access activates only after the approved membership payment is verified.
           </p>
         </div>
         <div id={`${JOIN_FORM_ID}-error`} hidden class="mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
@@ -679,7 +629,7 @@ const faqs = [
       if (backBtn) backBtn.hidden = index === 0;
       if (nextBtn) nextBtn.hidden = index === panels.length - 1;
       if (submitBtn) submitBtn.hidden = index !== panels.length - 1;
-      const dots = document.querySelectorAll('[data-escrow-tracker] [data-tracker-dot]');
+      const dots = document.querySelectorAll('[data-process-tracker] [data-tracker-dot]');
       dots.forEach((d, i) => {
         if (i <= index + 1) {
           d.classList.add('border-primary', 'bg-primary', 'text-primary-foreground');
@@ -706,16 +656,6 @@ const faqs = [
   }
 
   document.querySelectorAll<HTMLElement>('form[data-wizard]').forEach(setupWizard);
-
-  /* Optional CV picker — uploads are not enabled until a storage flow is configured. */
-  document.querySelectorAll<HTMLInputElement>('[data-cv-input]').forEach((input) => {
-    input.addEventListener('change', () => {
-      const label = input.parentElement?.querySelector<HTMLElement>('[data-cv-name]');
-      if (!label) return;
-      const file = input.files && input.files[0];
-      label.textContent = file ? `Attached: ${file.name}` : 'No file selected.';
-    });
-  });
 
   document.querySelectorAll<HTMLFormElement>('form[data-form-id]').forEach((form) => {
     form.addEventListener('submit', async (event) => {

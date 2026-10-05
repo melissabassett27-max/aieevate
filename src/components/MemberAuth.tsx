@@ -104,7 +104,7 @@ export default function MemberAuth() {
             {mode === 'signin' ? 'Member sign in' : 'Create your member account'}
           </p>
           <p className="text-xs text-muted-foreground">
-            Sign in to see your live dashboard — accounts, bot scores and payouts.
+            Sign in to access your member dashboard after membership payment is confirmed.
           </p>
         </div>
         <div className="flex rounded-md border border-border bg-secondary p-0.5 text-xs">

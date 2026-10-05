@@ -2,17 +2,17 @@
 import Menu from '@lucide/astro/icons/menu';
 
 const links = [
-  { href: '/index#sell-account', label: 'Sell an Account' },
-  { href: '/index#team-dashboard', label: 'Team Dashboard' },
-  { href: '/index#bots', label: 'Bot Network' },
-  { href: '/index#join', label: 'Join the Team' },
-  { href: '/index#faq', label: 'FAQ' },
+  { href: '/#sell-account', label: 'Sell an Account' },
+  { href: '/#team-dashboard', label: 'Team Dashboard' },
+  { href: '/#bots', label: 'How It Works' },
+  { href: '/#join', label: 'Join the Team' },
+  { href: '/#faq', label: 'FAQ' },
 ];
 ---
 
 <header class="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
   <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-    <a href="/index" class="flex items-center gap-2.5">
+    <a href="/" class="flex items-center gap-2.5">
       <img src="/images/logo.png" alt="AI Elevate logo" class="h-9 w-9 rounded-lg object-cover" />
       <span class="text-lg font-bold tracking-tight">AI <span class="text-primary">Elevate</span></span>
     </a>
@@ -36,7 +36,7 @@ const links = [
         <span data-currency-code>USD</span>
       </button>
       <a
-        href="/index#join"
+        href="/#join"
         class="ml-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
       >
         Get Started
@@ -73,7 +73,7 @@ const links = [
         Country &amp; Currency (<span data-currency-code>USD</span>)
       </button>
       <a
-        href="/index#join"
+        href="/#join"
         class="mt-2 rounded-md bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground"
       >
         Get Started

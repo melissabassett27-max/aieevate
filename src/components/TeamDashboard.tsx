@@ -130,6 +130,7 @@ function normalizeStatus(value: string | null | undefined): ManagedAccount['stat
 export default function TeamDashboard() {
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [membershipStatus, setMembershipStatus] = useState<'loading' | 'unpaid' | 'active' | 'error'>('loading');
   const [liveAccounts, setLiveAccounts] = useState<ManagedAccount[]>([]);
   const [liveLog, setLiveLog] = useState<EvalEntry[]>([]);
   const [livePayouts, setLivePayouts] = useState<PayoutRow[]>([]);
@@ -144,9 +145,31 @@ export default function TeamDashboard() {
 
   const live = Boolean(session);
 
-  const loadLiveData = useCallback(async () => {
+  const loadLiveData = useCallback(async (userId: string) => {
     if (!supabase) return;
     setLoadingData(true);
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('membership_status')
+      .eq('id', userId)
+      .maybeSingle();
+    if (profileError) {
+      setMembershipStatus('error');
+      setLiveAccounts([]);
+      setLiveLog([]);
+      setLivePayouts([]);
+      setLoadingData(false);
+      return;
+    }
+    if (profile?.membership_status !== 'active') {
+      setMembershipStatus('unpaid');
+      setLiveAccounts([]);
+      setLiveLog([]);
+      setLivePayouts([]);
+      setLoadingData(false);
+      return;
+    }
+    setMembershipStatus('active');
     const [accRes, evalRes, payRes] = await Promise.all([
       supabase.from('managed_accounts').select('*').order('created_at', { ascending: true }),
       supabase.from('bot_evaluations').select('*').order('created_at', { ascending: false }).limit(20),
@@ -195,12 +218,16 @@ export default function TeamDashboard() {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setAuthReady(true);
-      if (data.session) void loadLiveData();
+      if (data.session) void loadLiveData(data.session.user.id);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
-      if (next) void loadLiveData();
+      if (next) {
+        setMembershipStatus('loading');
+        void loadLiveData(next.user.id);
+      }
       else {
+        setMembershipStatus('unpaid');
         setLiveAccounts([]);
         setLiveLog([]);
         setLivePayouts([]);
@@ -284,6 +311,28 @@ export default function TeamDashboard() {
         <span className="inline-flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading…
         </span>
+      </div>
+    );
+  }
+
+  if (live && membershipStatus === 'loading') {
+    return <div className="rounded-lg border border-border p-6 text-sm text-muted-foreground">Checking membership status…</div>;
+  }
+
+  if (live && membershipStatus === 'error') {
+    return (
+      <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-6 text-sm text-destructive">
+        Membership status could not be loaded. Check Supabase configuration or contact info@aielevategroup.top. No dashboard data is shown.
+      </div>
+    );
+  }
+
+  if (live && membershipStatus === 'unpaid') {
+    return (
+      <div className="rounded-lg border border-border bg-card p-6">
+        <h2 className="text-lg font-semibold">Membership not active</h2>
+        <p className="mt-2 text-sm text-muted-foreground">The member dashboard unlocks after application approval and confirmation of the one-time $50 membership payment.</p>
+        <a href="/#join" className="mt-4 inline-flex rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">View team application</a>
       </div>
     );
   }
