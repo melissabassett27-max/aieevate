@@ -1,6 +1,6 @@
 # AI Elevate
 
-AI Elevate is an Astro site with Supabase authentication and member data. Membership checkout is created as a fixed-amount AllPays payment link by the Vercel serverless functions; payment confirmation is verified server-side against AllPays using the private secret returned for that specific link.
+AI Elevate is an Astro site with Supabase authentication and member data. Membership checkout is created as a customer-editable AllPays payment link by the Vercel serverless functions; payment confirmation is verified server-side against AllPays using the private secret returned for that specific link.
 
 ## Local development
 
@@ -8,7 +8,7 @@ Requirements: Node.js 22 and Corepack.
 
 1. Install dependencies with `corepack pnpm install` (the project pins pnpm 10.12.1).
 2. Copy `.env.example` to `.env` and set the Supabase values and an admin email.
-3. Run all SQL migrations in `supabase/migrations` in timestamp order. The Paystack-named migration is historical schema setup; the later AllPays migration adds the current provider fields.
+3. Run all SQL migrations in `supabase/migrations` in timestamp order. The Paystack-named migration is historical schema setup; the later AllPays migration adds the current provider fields. The private CV storage migration creates the `team-cvs` bucket.
 4. Run `corepack pnpm dev` for the site, `corepack pnpm test` for the AllPays integration tests, or `corepack pnpm build` to verify a production build.
 
 `corepack pnpm dev` runs the Astro UI. To test Vercel API functions locally, use `corepack pnpm dlx vercel dev` from the project root and provide the server environment variables.
@@ -28,9 +28,11 @@ Set these in `.env` for local development and in Vercel's environment variables:
 - `ALLPAYS_MEMBERSHIP_AMOUNT`: Starting amount for the customer-editable link; defaults to `50` USD. Must be a positive whole number.
 - `ALLPAYS_FEE_PAYER`: `customer` or `merchant`.
 
+Team applications upload CVs directly to the private Supabase Storage bucket `team-cvs` using a short-lived signed upload token, avoiding serverless request-size limits. CVs are limited to 5 MB and PDF, DOC, DOCX, or TXT. The admin page creates a private 10-minute download link for each uploaded CV. Run `20261011130000_private_team_cv_storage.sql` in Supabase before deploying this upload flow.
+
 AllPays does not require a static API key for payment-link creation. It returns a private secret for each link; the app stores that secret server-side and sends it only to AllPays' payment-link verification endpoint. Never put payment secrets in browser code, source control, screenshots, or chat. If a link secret is exposed, revoke that link in AllPays and create a replacement.
 
-AllPays links are created with `amount_editable=true` and a starting amount of USD 50 by default. Set `ALLPAYS_MEMBERSHIP_AMOUNT` to a different positive whole-number USD amount when intentionally testing at another price. Membership activates only when the completed attempt amount exactly matches the configured starting amount, the email matches the application, and AllPays reports exact checkout/merchant amount matches. A customer-edited amount that differs from the configured invoice will not activate membership. The payment return page asks the server to verify the attempt; query-string values alone are never treated as proof of payment. The admin sends the generated hosted link to the approved applicant. Account sellers are offered $30, but seller payouts remain manual. Account verification, task evaluation, assignments, and team payouts are not automated.
+AllPays links are created with `amount_editable=true` and a starting amount of USD 50 by default. Set `ALLPAYS_MEMBERSHIP_AMOUNT` to a different positive whole-number USD amount when intentionally testing at another price. Membership activates only when the completed attempt amount exactly matches the configured starting amount, the email matches the application, and AllPays reports exact checkout/merchant amount matches. A customer-edited amount that differs from the configured invoice will not activate membership. The payment return page asks the server to verify the attempt; query-string values alone are never treated as proof of payment. Team applicants submit their details and CV, see an application-processing animation, and then receive the hosted AllPays checkout step. The animation does not make an eligibility decision; assignment remains manual. Account sellers are offered $30, but seller payouts remain manual. Account verification, task evaluation, assignments, and team payouts are not automated.
 
 AllPays documents no sandbox and a minimum amount above 10. Although the app can be configured for a USD 1 test amount, AllPays may reject it under that minimum; if accepted, it is a real charge. Keep the Polygon address unset in Preview unless you intentionally accept a real payment. Run `corepack pnpm test` to test link creation and payment validation locally; provider requests in the test suite are mocked. Restore `ALLPAYS_MEMBERSHIP_AMOUNT=50` after testing.
 

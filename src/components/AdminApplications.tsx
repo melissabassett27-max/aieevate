@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 type TeamApplication = {
   id: string;
   data: Record<string, string>;
+  cvFile?: { name: string; downloadUrl: string };
   created_at: string;
   review_status: 'pending' | 'approved' | 'rejected';
   payment_status: 'not_due' | 'pending' | 'paid' | 'rejected';
@@ -200,6 +201,12 @@ export default function AdminApplications() {
               <div><dt className="text-muted-foreground">Preferred work</dt><dd>{application.data.preferred_experience || '—'}</dd></div>
               <div><dt className="text-muted-foreground">Payout preference</dt><dd>{application.data.payout_method || '—'}</dd></div>
             </dl>
+            {application.cvFile && (
+              <p className="text-sm">
+                CV: <a className="text-primary underline" href={application.cvFile.downloadUrl} target="_blank" rel="noopener noreferrer">{application.cvFile.name}</a>
+                <span className="text-muted-foreground"> (private link expires after 10 minutes)</span>
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
               {application.review_status === 'pending' && (
                 <>

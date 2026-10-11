@@ -6,6 +6,7 @@ import {
   initializeMembershipCheckout,
   isSuccessfulMembershipPayment,
 } from '../src/lib/server/payments.mjs'
+import { validateCvMetadata } from '../api/cv-upload.mjs'
 
 const polygonAddress = '0x1234567890123456789012345678901234567890'
 
@@ -149,4 +150,20 @@ test('AllPays attempt lookup uses the per-link secret and selects the requested 
   } finally {
     globalThis.fetch = originalFetch
   }
+})
+
+test('CV upload metadata accepts supported files up to 5 MB and rejects invalid files', () => {
+  assert.deepEqual(validateCvMetadata({
+    name: 'resume.pdf',
+    type: 'application/pdf',
+    size: 1024,
+  }), {
+    extension: 'pdf',
+    name: 'resume.pdf',
+    type: 'application/pdf',
+    size: 1024,
+  })
+  assert.equal(validateCvMetadata({ name: 'resume.exe', type: 'application/octet-stream', size: 100 }), null)
+  assert.equal(validateCvMetadata({ name: 'resume.pdf', type: 'text/plain', size: 100 }), null)
+  assert.equal(validateCvMetadata({ name: 'resume.pdf', type: 'application/pdf', size: 5 * 1024 * 1024 + 1 }), null)
 })

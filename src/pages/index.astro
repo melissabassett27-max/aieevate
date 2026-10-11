@@ -17,7 +17,7 @@ const botFleet = [
   {
     name: 'Team application',
     stage: '$50 one-time membership',
-    role: 'An administrator reviews applications. Approved applicants receive a hosted checkout link; access activates after payment is verified.',
+    role: 'Submit your details and CV, view the application-processing animation, then continue to hosted checkout. Access activates after payment is verified.',
   },
   {
     name: 'Member dashboard',
@@ -76,7 +76,7 @@ const faqs = [
   },
   {
     q: 'How does the $50 team membership work?',
-    a: 'It is a one-time $50 fee, not a subscription. Applications are reviewed manually. After approval, the team sends a hosted checkout link; membership activates after payment verification. Account assignment is handled separately and is not automated yet.',
+    a: 'It is a one-time $50 fee, not a subscription. Submit your application and CV, then continue to AllPays checkout after the application-processing animation. Membership activates only after server-side payment verification. Account assignment is handled separately.',
   },
   {
     q: 'How is the 90/10 split applied?',
@@ -88,7 +88,7 @@ const faqs = [
   },
   {
     q: 'How do I pay the $50 team membership fee?',
-    a: 'After approval, the team creates a hosted $50 checkout link and sends it to you. Payment is confirmed server-side before membership is activated.',
+    a: 'After submitting your application and CV, the site shows the AllPays checkout step. Payment is confirmed server-side before membership is activated.',
   },
   {
     q: 'What happens if I submit a fake or duplicate account?',
@@ -112,7 +112,7 @@ const faqs = [
           Sell your AI training account for <span class="text-primary" data-usd="30">$30</span> — or join the team.
         </h1>
         <p class="mt-4 text-lg text-muted-foreground">
-          Submit an account for manual review for a <span data-usd="30">$30</span> seller offer. Team membership costs <span data-usd="50">$50</span>; approved applicants receive a secure checkout link.
+          Submit an account for manual review for a <span data-usd="30">$30</span> seller offer. Team membership costs <span data-usd="50">$50</span>; applicants submit their CV, then continue to secure checkout after the processing animation.
         </p>
         <div class="mt-6 flex flex-wrap gap-3">
           <a href="#sell-account" class="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
@@ -133,7 +133,7 @@ const faqs = [
           </div>
           <div class="rounded-lg border border-border bg-card p-3">
             <dt class="text-xs text-muted-foreground">Membership</dt>
-            <dd class="text-xl font-bold text-primary">After approval</dd>
+            <dd class="text-xl font-bold text-primary">After payment</dd>
           </div>
         </dl>
       </div>
@@ -434,7 +434,7 @@ const faqs = [
       <div>
         <h2 class="text-3xl font-bold tracking-tight">Join the team — <span class="text-primary" data-usd="50">$50</span>, once, forever</h2>
         <p class="mt-3 text-muted-foreground">
-          No subscription. Submit an application for review; if approved, pay USD 50.00 through the checkout link the team sends you. Your bank may convert the charge or add fees. Payment confirmation activates dashboard access.
+          No subscription. Submit your application and CV, complete the short processing animation, then pay through secure AllPays checkout. The default amount is USD 50.00; your bank may convert the charge or add fees. Dashboard access activates after server-side payment confirmation.
         </p>
         <ul class="mt-6 space-y-3 text-sm">
           <li class="flex items-start gap-3">
@@ -451,7 +451,7 @@ const faqs = [
           </li>
           <li class="flex items-start gap-3">
             <BadgeCheck class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <span><strong>Application review</strong> — assignment decisions are made manually by the team.</span>
+            <span><strong>Application processing</strong> — the on-page checklist is an animation and does not make an eligibility decision; the team handles assignment decisions manually.</span>
           </li>
         </ul>
 
@@ -464,7 +464,7 @@ const faqs = [
           <div class="rounded-lg border border-border bg-card p-3">
             <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">2</span>
             <p class="mt-2 text-sm font-semibold">Pay <span data-usd="50">$50</span></p>
-            <p class="mt-1 text-xs text-muted-foreground">After application approval</p>
+            <p class="mt-1 text-xs text-muted-foreground">After CV and application processing</p>
           </div>
           <div class="rounded-lg border border-border bg-card p-3">
             <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">3</span>
@@ -573,7 +573,7 @@ const faqs = [
             </div>
           </div>
           <button type="submit" class="mt-6 w-full rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
-            Apply for <span data-usd="50">$50</span> membership
+            Submit for bot verification
           </button>
         </form>
 
@@ -586,18 +586,19 @@ const faqs = [
           <BotVerifier
             client:visible
             title="Eligibility verification"
-            subtitle="Checking your application details and CV summary"
+            subtitle="Animated checklist; it does not make an eligibility decision"
             buttonLabel="Start verification"
             checks={[
-              { label: 'Document check', detail: 'confirming CV is attached and readable' },
-              { label: 'Profile review', detail: 'matching email, country, and experience' },
-              { label: 'Eligibility scan', detail: 'checking preferred work categories and payout details' },
-              { label: 'Final approval', detail: 'preparing secure membership checkout' },
+              { label: 'CV received', detail: 'confirming the uploaded file is attached' },
+              { label: 'Application saved', detail: 'preparing your details for team review' },
+              { label: 'Processing step', detail: 'showing the application status animation' },
+              { label: 'Next step', detail: 'opening secure membership checkout' },
             ]}
             event="team"
-            autoStart={false}
-            resultTitle="Verification complete"
-            resultBody="Your application has passed the automated checks. Continue to the secure AllPays payment step below."
+            autoStart={true}
+            completionEvent="team"
+            resultTitle="Application processing complete"
+            resultBody="Your application is saved. Continue to the secure AllPays payment step below."
           />
         </div>
 
@@ -643,6 +644,8 @@ const faqs = [
 </style>
 
 <script>
+  import { supabase } from '../lib/supabase';
+
   function setupWizard(root: HTMLElement) {
     const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-step-panel]'));
     const backBtn = root.querySelector<HTMLButtonElement>('[data-nav="back"]');
@@ -700,11 +703,48 @@ const faqs = [
       if (submitButton) submitButton.disabled = true;
 
       const formData = new FormData(form);
-      formData.set('form', formKind);
       try {
+        const payload: Record<string, string | { path: string; name: string; type: string; size: number }> = {};
+        for (const [key, value] of formData.entries()) {
+          if (key !== 'cv' && key !== 'form' && typeof value === 'string') payload[key] = value;
+        }
+
+        if (formKind === 'team-application') {
+          const cv = formData.get('cv');
+          if (!(cv instanceof File) || !cv.name) throw new Error('Please choose a CV file');
+          if (cv.size > 5 * 1024 * 1024) throw new Error('Your CV must be 5 MB or smaller');
+          if (!supabase) throw new Error('CV upload is not configured. Please contact support.');
+
+          const prepareResponse = await fetch('/api/cv-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: cv.name, type: cv.type, size: cv.size }),
+          });
+          const uploadDetails = await prepareResponse.json().catch(() => null);
+          if (!prepareResponse.ok) throw new Error(uploadDetails?.error || 'Could not prepare CV upload');
+
+          const { error: uploadError } = await supabase.storage
+            .from('team-cvs')
+            .uploadToSignedUrl(uploadDetails.path, uploadDetails.token, cv, {
+              contentType: uploadDetails.type,
+              upsert: false,
+            });
+          if (uploadError) {
+            console.error('CV upload failed:', uploadError.message);
+            throw new Error('CV upload failed. Please try again.');
+          }
+          payload.cv = {
+            path: uploadDetails.path,
+            name: uploadDetails.name,
+            type: uploadDetails.type,
+            size: uploadDetails.size,
+          };
+        }
+
         const response = await fetch('/api/submit-intake', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ form: formKind, data: payload }),
         });
         const result = await response.json().catch(() => null);
         if (!response.ok) throw new Error(result?.error || 'Submission failed');
@@ -726,21 +766,27 @@ const faqs = [
             }, 150);
           }, 3000);
 
-          const checkoutUrl = result?.checkoutUrl || '#';
-          const amount = result?.amount || 50;
-          const currency = result?.currency || 'USD';
+          if (typeof result?.checkoutUrl !== 'string' || typeof result?.amount !== 'number' || typeof result?.currency !== 'string') {
+            throw new Error('Application saved, but checkout details were not returned. Please contact support before submitting again.');
+          }
           if (paymentLink) {
-            paymentLink.href = checkoutUrl;
+            paymentLink.href = result.checkoutUrl;
+            paymentLink.hidden = false;
+            const amount = result.amount;
+            const currency = result.currency;
             paymentLink.textContent = `Pay ${amount} ${currency} with AllPays`;
           }
 
-          window.setTimeout(() => {
+          window.addEventListener('aielevate:bot-complete:team', () => {
             if (paymentPanel) paymentPanel.hidden = false;
-          }, 7000);
+          }, { once: true });
         }
       } catch (error) {
         console.error('Form submission failed:', error);
-        if (errorPanel) errorPanel.hidden = false;
+        if (errorPanel) {
+          errorPanel.textContent = error instanceof Error ? error.message : 'Something went wrong. Please try again or contact info@aielevategroup.top.';
+          errorPanel.hidden = false;
+        }
       } finally {
         if (submitButton) submitButton.disabled = false;
       }

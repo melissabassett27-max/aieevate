@@ -15,6 +15,7 @@ type Props = {
   autoStart?: boolean;
   /** Scope the auto-start event, e.g. "sell" -> listens for "aielevate:run-bots:sell". */
   event?: string;
+  completionEvent?: string;
   resultTitle?: string;
   resultBody?: string;
 };
@@ -26,6 +27,7 @@ export default function BotVerifier({
   buttonLabel = 'Run bot verification',
   autoStart = false,
   event,
+  completionEvent,
   resultTitle = 'Verification complete',
   resultBody,
 }: Props) {
@@ -46,10 +48,11 @@ export default function BotVerifier({
       () => {
         setRunning(false);
         setFinished(true);
+        if (completionEvent) window.dispatchEvent(new CustomEvent(`aielevate:bot-complete:${completionEvent}`));
       },
       620 * checks.length + 450,
     );
-  }, [checks]);
+  }, [checks, completionEvent]);
 
   useEffect(() => {
     if (!autoStart) return;

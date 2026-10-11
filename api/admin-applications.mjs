@@ -30,8 +30,37 @@ export default {
       console.error('Could not load applications:', teamResult.error?.message || saleResult.error?.message)
       return jsonResponse(500, { error: 'Could not load applications' })
     }
+
+    let teamApplications
+    try {
+      teamApplications = await Promise.all((teamResult.data || []).map(async (application) => {
+        const cv = application.data?.cv
+        if (!cv || typeof cv.path !== 'string' || !/^team-applications\/[0-9a-f-]{36}\.(pdf|doc|docx|txt)$/i.test(cv.path)) {
+          const { cv: _cv, ...data } = application.data || {}
+          return { ...application, data }
+        }
+
+        const { data: signedFile, error } = await supabase.storage
+          .from('team-cvs')
+          .createSignedUrl(cv.path, 10 * 60, { download: cv.name })
+        if (error || !signedFile?.signedUrl) {
+          console.error('Could not create admin CV download URL:', error?.message || application.id)
+          throw new Error('CV download link could not be prepared')
+        }
+
+        const { cv: _cv, ...data } = application.data
+        return {
+          ...application,
+          data,
+          cvFile: { name: cv.name, downloadUrl: signedFile.signedUrl },
+        }
+      }))
+    } catch {
+      return jsonResponse(503, { error: 'CV download links are temporarily unavailable' })
+    }
+
     return jsonResponse(200, {
-      teamApplications: teamResult.data || [],
+      teamApplications,
       accountSaleSubmissions: saleResult.data || [],
     })
   },

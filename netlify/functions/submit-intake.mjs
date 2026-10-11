@@ -2,12 +2,13 @@ import { createClient } from '@supabase/supabase-js'
 import {
   createMembershipPaymentReference,
   getAllPaysConfig,
-  getSupabaseAdmin,
   initializeMembershipCheckout,
 } from '../../src/lib/server/payments.mjs'
 
 const allowedForms = new Set(['account-sale', 'team-application'])
-const maxBodyLength = 16_384
+const maxBodyLength = 64 * 1024
+const cvBucket = 'team-cvs'
+const maxCvSize = 5 * 1024 * 1024
 const headers = {
   'Content-Type': 'application/json',
   'Cache-Control': 'no-store',
@@ -19,29 +20,6 @@ const respond = (status, body, additionalHeaders = {}) => new Response(JSON.stri
 })
 
 async function parseSubmission(request) {
-  const contentType = request.headers.get('content-type') || ''
-  if (contentType.includes('multipart/form-data')) {
-    const formData = await request.formData()
-    const payload = {}
-    let formName = ''
-    for (const [key, item] of formData.entries()) {
-      if (key === 'form') {
-        formName = String(item)
-        continue
-      }
-      if (typeof item === 'string') {
-        payload[key] = item
-      } else if (item instanceof File) {
-        payload[key] = {
-          name: item.name,
-          type: item.type,
-          size: item.size,
-        }
-      }
-    }
-    return { form: formName, data: payload }
-  }
-
   const rawBody = await request.text()
   if (!rawBody || rawBody.length > maxBodyLength) {
     throw new Error('Request body is too large')
@@ -52,6 +30,11 @@ async function parseSubmission(request) {
   } catch {
     throw new Error('Invalid request body')
   }
+}
+
+async function removeCv(supabase, path) {
+  const { error } = await supabase.storage.from(cvBucket).remove([path])
+  if (error) console.error('Could not remove abandoned CV upload:', error.message)
 }
 
 export default async (request) => {
@@ -94,11 +77,38 @@ export default async (request) => {
   const { website: _website, ...data } = input.data
 
   if (input.form === 'team-application') {
+    const cv = data.cv
+    if (
+      !cv
+      || typeof cv !== 'object'
+      || typeof cv.path !== 'string'
+      || !/^team-applications\/[0-9a-f-]{36}\.(pdf|doc|docx|txt)$/i.test(cv.path)
+      || typeof cv.name !== 'string'
+      || typeof cv.type !== 'string'
+      || !Number.isSafeInteger(cv.size)
+      || cv.size < 1
+      || cv.size > maxCvSize
+    ) {
+      return respond(400, { error: 'Upload a PDF, DOC, DOCX, or TXT CV no larger than 5 MB' })
+    }
+
+    const { data: uploadedFiles, error: uploadedFilesError } = await supabase.storage
+      .from(cvBucket)
+      .list('team-applications', { search: cv.path.split('/').at(-1), limit: 1 })
+    if (uploadedFilesError) {
+      console.error('Could not verify uploaded CV:', uploadedFilesError.message)
+      return respond(503, { error: 'Could not verify CV upload' })
+    }
+    if (!uploadedFiles?.some((file) => `team-applications/${file.name}` === cv.path)) {
+      return respond(400, { error: 'CV upload was not found; please upload it again' })
+    }
+
     let config
     try {
       config = getAllPaysConfig()
     } catch (error) {
       console.error('AllPays is not configured for team applications:', error.message)
+      await removeCv(supabase, cv.path)
       return respond(503, { error: 'Membership checkout is not configured' })
     }
 
@@ -109,6 +119,7 @@ export default async (request) => {
       checkout = await initializeMembershipCheckout({ requestUrl: request.url, reference })
     } catch (error) {
       console.error('Could not create AllPays checkout for team application:', error.message)
+      await removeCv(supabase, cv.path)
       return respond(503, { error: 'Membership checkout could not be created' })
     }
 
@@ -128,6 +139,7 @@ export default async (request) => {
 
     if (error) {
       console.error(`Supabase intake insert failed (${table}):`, error.message)
+      await removeCv(supabase, cv.path)
       return respond(500, { error: 'Could not save submission' })
     }
 
