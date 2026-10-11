@@ -480,9 +480,10 @@ const faqs = [
             <label for="join-website">Leave this field empty</label>
             <input id="join-website" name="website" tabindex="-1" autocomplete="off" />
           </div>
+          <input type="hidden" name="form" value="team-application" />
           <p class="mb-4 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
             <Banknote class="h-4 w-4 shrink-0" />
-            Apply first. If approved, the team sends a secure checkout link for the one-time USD 50 membership fee. Your bank or card issuer may convert the charge or add fees.
+            Submit your application, upload your CV, and complete a quick eligibility check before paying the one-time USD 50 membership fee.
           </p>
           <div class="space-y-4">
             <div class="grid gap-4 sm:grid-cols-2">
@@ -566,25 +567,53 @@ const faqs = [
                 </select>
               </div>
             </div>
+            <div>
+              <label for="join_cv" class={labelClass}>Upload CV / resume <span class="text-destructive">*</span></label>
+              <input id="join_cv" name="cv" type="file" accept=".pdf,.doc,.docx,.txt" required class={`${inputClass} cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground`} />
+            </div>
           </div>
           <button type="submit" class="mt-6 w-full rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
             Apply for <span data-usd="50">$50</span> membership
           </button>
         </form>
-          <div id={`${JOIN_FORM_ID}-success`} hidden class="mt-4 rounded-xl border border-primary/40 bg-primary/10 p-5 text-sm">
-          <p class="flex items-center gap-2 font-semibold text-primary"><Check class="h-4 w-4" /> Application received for review</p>
-          <ol class="mt-3 space-y-2 text-muted-foreground">
-            <li class="flex items-start gap-2"><span class="font-semibold text-primary">1.</span> Your application details are stored for follow-up.</li>
-            <li class="flex items-start gap-2"><span class="font-semibold text-primary">2.</span> The team reviews applications manually and sends a checkout link to approved applicants.</li>
-          </ol>
-          <p class="mt-3 rounded-lg border border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
-            This form does not charge you. Dashboard access activates only after the approved membership payment is verified.
-          </p>
+
+        <div id={`${JOIN_FORM_ID}-success`} hidden class="mt-4 rounded-xl border border-primary/40 bg-primary/10 p-5 text-sm">
+          <p class="flex items-center gap-2 font-semibold text-primary"><Check class="h-4 w-4" /> Application received</p>
+          <p class="mt-3 text-muted-foreground">We’ve received your details and CV. Holding your application in a short verification queue.</p>
         </div>
+
+        <div id="join-verification-panel" hidden class="mt-4">
+          <BotVerifier
+            client:visible
+            title="Eligibility verification"
+            subtitle="Checking your application details and CV summary"
+            buttonLabel="Start verification"
+            checks={[
+              { label: 'Document check', detail: 'confirming CV is attached and readable' },
+              { label: 'Profile review', detail: 'matching email, country, and experience' },
+              { label: 'Eligibility scan', detail: 'checking preferred work categories and payout details' },
+              { label: 'Final approval', detail: 'preparing secure membership checkout' },
+            ]}
+            event="team"
+            autoStart={false}
+            resultTitle="Verification complete"
+            resultBody="Your application has passed the automated checks. Continue to the secure AllPays payment step below."
+          />
+        </div>
+
+        <div id="join-payment-panel" hidden class="mt-4 rounded-xl border border-border bg-card p-5">
+          <p class="text-sm font-semibold text-foreground">Secure payment</p>
+          <p class="mt-2 text-sm text-muted-foreground">The membership default is USD $50. The checkout amount can be edited in AllPays before you confirm payment.</p>
+          <a id="join-payment-link" href="#" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex w-full items-center justify-center rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
+            Pay $50 with AllPays
+          </a>
+        </div>
+
         <div id={`${JOIN_FORM_ID}-error`} hidden class="mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
           Something went wrong. Please try again or contact info@aielevategroup.top.
         </div>
       </div>
+
     </div>
   </section>
 
@@ -663,26 +692,54 @@ const faqs = [
       const successPanel = document.getElementById(`${form.dataset.formId}-success`);
       const errorPanel = document.getElementById(`${form.dataset.formId}-error`);
       const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      const formKind = form.dataset.formId === 'sell-account-form' ? 'account-sale' : 'team-application';
       if (!form.reportValidity()) return;
 
       if (successPanel) successPanel.hidden = true;
       if (errorPanel) errorPanel.hidden = true;
       if (submitButton) submitButton.disabled = true;
 
-      const payload = Object.fromEntries(new FormData(form).entries());
+      const formData = new FormData(form);
+      formData.set('form', formKind);
       try {
         const response = await fetch('/api/submit-intake', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            form: form.dataset.formId === 'sell-account-form' ? 'account-sale' : 'team-application',
-            data: payload,
-          }),
+          body: formData,
         });
-        if (!response.ok) throw new Error('Submission failed');
+        const result = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(result?.error || 'Submission failed');
+
         form.hidden = true;
         if (successPanel) successPanel.hidden = false;
-      } catch {
+
+        if (formKind === 'team-application') {
+          const verificationPanel = document.getElementById('join-verification-panel');
+          const paymentPanel = document.getElementById('join-payment-panel');
+          const paymentLink = document.getElementById('join-payment-link') as HTMLAnchorElement | null;
+          if (verificationPanel) verificationPanel.hidden = true;
+          if (paymentPanel) paymentPanel.hidden = true;
+
+          window.setTimeout(() => {
+            if (verificationPanel) verificationPanel.hidden = false;
+            window.setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('aielevate:run-bots:team'));
+            }, 150);
+          }, 3000);
+
+          const checkoutUrl = result?.checkoutUrl || '#';
+          const amount = result?.amount || 50;
+          const currency = result?.currency || 'USD';
+          if (paymentLink) {
+            paymentLink.href = checkoutUrl;
+            paymentLink.textContent = `Pay ${amount} ${currency} with AllPays`;
+          }
+
+          window.setTimeout(() => {
+            if (paymentPanel) paymentPanel.hidden = false;
+          }, 7000);
+        }
+      } catch (error) {
+        console.error('Form submission failed:', error);
         if (errorPanel) errorPanel.hidden = false;
       } finally {
         if (submitButton) submitButton.disabled = false;
