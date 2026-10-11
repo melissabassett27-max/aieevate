@@ -1,7 +1,7 @@
 -- Switch team membership checkout from the earlier Paystack prototype to AllPays.
 -- AllPays returns a per-payment-link secret; it stays server-side in this RLS-protected table.
 alter table public.team_applications
-  add column payment_provider text not null default 'allpays'
+  add column payment_provider text
     check (payment_provider = 'allpays'),
   add column payment_provider_id text,
   add column payment_provider_secret text,

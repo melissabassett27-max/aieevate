@@ -42,11 +42,6 @@ export async function requireAdmin(request) {
   return { supabase, user: data.user }
 }
 
-const allPaysCurrencies = new Set([
-  'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF', 'NOK', 'SEK', 'DKK',
-  'RUB', 'UAH', 'KZT', 'UZS', 'TRY', 'SGD', 'HKD', 'THB',
-])
-
 export function getAllPaysConfig() {
   const polygonAddress = process.env.ALLPAYS_POLYGON_ADDRESS || ''
   const currency = (process.env.ALLPAYS_CURRENCY || 'USD').toUpperCase()
@@ -56,12 +51,11 @@ export function getAllPaysConfig() {
   if (!/^0x[a-fA-F0-9]{40}$/.test(polygonAddress)) {
     throw new Error('A valid Polygon settlement address is not configured')
   }
-  if (!allPaysCurrencies.has(currency)) throw new Error('AllPays does not list this settlement currency')
-  if (!Number.isFinite(amount) || amount <= 10) throw new Error('AllPays requires a fixed amount greater than 10')
-  if (!['customer', 'merchant'].includes(feePayer)) throw new Error('Invalid AllPays fee payer setting')
-  if (process.env.VERCEL_ENV === 'production' && (currency !== 'USD' || amount !== 50)) {
-    throw new Error('Production membership checkout is fixed at USD 50.00')
+  if (currency !== 'USD') throw new Error('Membership checkout currency must be USD')
+  if (!Number.isSafeInteger(amount) || amount < 1) {
+    throw new Error('Membership checkout amount must be a positive whole number of USD')
   }
+  if (!['customer', 'merchant'].includes(feePayer)) throw new Error('Invalid AllPays fee payer setting')
 
   return { polygonAddress, currency, amount, feePayer }
 }
@@ -70,7 +64,7 @@ export function createMembershipPaymentReference() {
   return `AIEMEM_${randomUUID().replaceAll('-', '')}`
 }
 
-export async function initializeMembershipCheckout({ applicationId, requestUrl, reference = createMembershipPaymentReference() }) {
+export async function initializeMembershipCheckout({ requestUrl, reference = createMembershipPaymentReference() }) {
   const config = getAllPaysConfig()
   const callbackUrl = new URL('/api/allpays-callback', requestUrl)
   callbackUrl.searchParams.set('reference', reference)
@@ -84,7 +78,7 @@ export async function initializeMembershipCheckout({ applicationId, requestUrl, 
       polygon_address: config.polygonAddress,
       currency: config.currency,
       amount: config.amount,
-      amount_editable: false,
+      amount_editable: true,
       fee_payer: config.feePayer,
       callback_url: callbackUrl.toString(),
     }),

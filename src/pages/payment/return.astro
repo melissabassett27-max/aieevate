@@ -14,29 +14,43 @@ import Layout from '../../layouts/Layout.astro';
 <script>
   const statusElement = document.querySelector<HTMLElement>('[data-payment-status]');
   const dashboardLink = document.querySelector<HTMLAnchorElement>('[data-dashboard-link]');
-  const reference = new URLSearchParams(window.location.search).get('reference');
+  const params = new URLSearchParams(window.location.search);
+  const reference = params.get('reference');
+  const paymentId = params.get('payment_id');
+  const attemptHash = params.get('pay_request_hash');
 
-  if (!reference) {
-    if (statusElement) statusElement.textContent = 'No payment reference was returned. If you completed checkout, contact info@aielevategroup.top.';
+  if (!reference || !paymentId || !attemptHash) {
+    if (statusElement) statusElement.textContent = 'Payment confirmation details were not returned. If you completed checkout, contact info@aielevategroup.top.';
   } else {
-    fetch(`/api/paystack-verify?reference=${encodeURIComponent(reference)}`)
-      .then(async (response) => {
-        const result = await response.json().catch(() => null);
-        if (!response.ok && response.status !== 202) throw new Error(result?.error || 'Could not verify payment');
-        return result;
-      })
-      .then((result) => {
+    const verifyPayment = async () => {
+      const query = new URLSearchParams({
+        reference,
+        payment_id: paymentId,
+        pay_request_hash: attemptHash,
+      });
+      const response = await fetch(`/api/allpays-callback?${query.toString()}`);
+      const result = await response.json().catch(() => null);
+      if (!response.ok && response.status !== 202) throw new Error(result?.error || 'Could not verify payment');
+      return result;
+    };
+
+    const checkPayment = async () => {
+      try {
+        const result = await verifyPayment();
         if (result.status === 'paid') {
           if (statusElement) statusElement.textContent = 'Payment confirmed. Sign in or create your member account with the same email you used on your application to access the dashboard.';
           if (dashboardLink) dashboardLink.hidden = false;
-        } else if (result.status === 'failed' && statusElement) {
-          statusElement.textContent = 'Payment was not completed. Return to the application page if you would like to try again.';
+        } else if (result.status === 'failed') {
+          if (statusElement) statusElement.textContent = 'This payment attempt timed out. You can try again using the checkout link sent by the team.';
         } else if (statusElement) {
-          statusElement.textContent = 'Payment is still processing. Refresh this page in a moment; membership activates after confirmation.';
+          statusElement.textContent = 'Payment is still processing. Checking again shortly; membership activates after confirmation.';
+          window.setTimeout(() => void checkPayment(), 5000);
         }
-      })
-      .catch((error) => {
-        if (statusElement) statusElement.textContent = `${error.message}. Contact info@aielevategroup.top if you were charged.`;
-      });
+      } catch (error) {
+        if (statusElement) statusElement.textContent = `${error instanceof Error ? error.message : 'Could not verify payment'}. Contact info@aielevategroup.top if you were charged.`;
+      }
+    };
+
+    void checkPayment();
   }
 </script>

@@ -6,6 +6,21 @@ import {
   markMembershipPaid,
 } from '../src/lib/server/payments.mjs'
 
+function callbackResponse(request, reference, status, identifiers = {}) {
+  if (request.headers.get('accept')?.includes('text/html')) {
+    const returnUrl = new URL('/payment/return', request.url)
+    returnUrl.searchParams.set('reference', reference)
+    returnUrl.searchParams.set('status', status)
+    if (identifiers.paymentId) returnUrl.searchParams.set('payment_id', identifiers.paymentId)
+    if (identifiers.attemptHash) returnUrl.searchParams.set('pay_request_hash', identifiers.attemptHash)
+    return new Response(null, {
+      status: 303,
+      headers: { Location: returnUrl.toString(), 'Cache-Control': 'no-store' },
+    })
+  }
+  return jsonResponse(status === 'pending' ? 202 : 200, { received: true, status })
+}
+
 export default {
   async fetch(request) {
     if (request.method !== 'GET') return jsonResponse(405, { error: 'Method not allowed' })
@@ -31,7 +46,15 @@ export default {
       .maybeSingle()
     if (error) return jsonResponse(500, { error: 'Could not load application payment' })
     if (!application) return jsonResponse(404, { error: 'Payment application not found' })
-    if (application.payment_status === 'paid') return jsonResponse(200, { received: true, status: 'paid' })
+    if (application.payment_status === 'paid') {
+      try {
+        await markMembershipPaid(supabase, application)
+        return callbackResponse(request, reference, 'paid', { paymentId, attemptHash })
+      } catch (error) {
+        console.error('Could not reactivate an already-paid membership:', error.message)
+        return jsonResponse(503, { error: 'Membership activation is temporarily unavailable' })
+      }
+    }
     if (application.review_status !== 'approved' || application.payment_status !== 'pending') {
       return jsonResponse(409, { error: 'Application is not awaiting membership payment' })
     }
@@ -45,7 +68,10 @@ export default {
         paymentSecret: application.payment_provider_secret,
         attemptHash,
       })
-      if (attempt.status !== 'completed') return jsonResponse(202, { received: true, status: 'pending' })
+      if (attempt.status !== 'completed') {
+        const status = attempt.status === 'timed_out' ? 'failed' : 'pending'
+        return callbackResponse(request, reference, status, { paymentId, attemptHash })
+      }
       if (!isSuccessfulMembershipPayment(attempt, application)) {
         console.error('AllPays completed attempt failed amount/email validation:', attemptHash)
         return jsonResponse(409, { error: 'Payment attempt does not match the membership invoice' })
@@ -63,7 +89,7 @@ export default {
       if (recordError || !recorded) return jsonResponse(503, { error: 'Could not record payment attempt' })
 
       await markMembershipPaid(supabase, { ...application, payment_attempt_hash: attemptHash })
-      return jsonResponse(200, { received: true, status: 'paid' })
+      return callbackResponse(request, reference, 'paid', { paymentId, attemptHash })
     } catch (error) {
       console.error('Could not verify AllPays payment callback:', error.message)
       return jsonResponse(503, { error: 'Payment verification is temporarily unavailable' })

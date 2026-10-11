@@ -77,6 +77,7 @@ export default {
       .from('team_applications')
       .update({
         payment_status: 'pending',
+        payment_provider: 'allpays',
         payment_reference: reference,
         payment_checkout_url: null,
         payment_provider_id: null,
@@ -110,15 +111,15 @@ export default {
     let checkout
     try {
       checkout = await initializeMembershipCheckout({
-        applicationId: application.id,
         requestUrl: request.url,
         reference,
       })
     } catch (error) {
       console.error('Could not create AllPays checkout:', error.message)
-      await supabase.from('team_applications')
+      const { error: resetError } = await supabase.from('team_applications')
         .update({
           payment_status: 'not_due',
+          payment_provider: null,
           payment_reference: null,
           payment_checkout_url: null,
           payment_provider_id: null,
@@ -129,7 +130,8 @@ export default {
         })
         .eq('id', application.id)
         .eq('payment_reference', reference)
-      return jsonResponse(503, { error: 'Paystack could not create checkout; no payment link was sent' })
+      if (resetError) console.error('Could not release failed checkout reservation:', resetError.message)
+      return jsonResponse(503, { error: 'AllPays could not create checkout; no payment link was sent' })
     }
 
     const { data: saved, error: saveError } = await supabase

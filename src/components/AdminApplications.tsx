@@ -142,7 +142,7 @@ export default function AdminApplications() {
         { applicationId },
       );
       setCheckoutLinks((previous) => ({ ...previous, [applicationId]: result.authorizationUrl }));
-      setMessage(`Checkout created: ${result.currency} ${result.amount / 100}. Copy the link and send it to the approved applicant.`);
+      setMessage(`Checkout created: ${result.currency} ${result.amount}. Copy the link and send it to the approved applicant.`);
       await loadApplications(session);
     } catch (checkoutError) {
       setError(checkoutError instanceof Error ? checkoutError.message : 'Could not create checkout');
@@ -208,7 +208,7 @@ export default function AdminApplications() {
                 </>
               )}
               {application.review_status === 'approved' && application.payment_status !== 'paid' && (
-                <button type="button" disabled={busyId === application.id} onClick={() => void createCheckout(application.id)} className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60">{busyId === application.id ? 'Working…' : 'Create $50 checkout link'}</button>
+                <button type="button" disabled={busyId === application.id} onClick={() => void createCheckout(application.id)} className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60">{busyId === application.id ? 'Working…' : 'Create membership checkout link'}</button>
               )}
             </div>
             {application.payment_status !== 'paid' && (checkoutLinks[application.id] || application.payment_checkout_url) && (
