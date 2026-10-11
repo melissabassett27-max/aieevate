@@ -1,6 +1,6 @@
 import {
   createMembershipPaymentReference,
-  getPaystackConfig,
+  getAllPaysConfig,
   getSupabaseAdmin,
   initializeMembershipCheckout,
   jsonResponse,
@@ -36,7 +36,7 @@ export default {
 
     const { data: application, error: lookupError } = await supabase
       .from('team_applications')
-      .select('id, data, review_status, payment_status, payment_reference, payment_checkout_url, payment_amount, payment_currency')
+      .select('id, data, review_status, payment_status, payment_reference, payment_checkout_url, payment_amount, payment_currency, payment_provider_id, payment_provider_secret, payment_checkout_started_at')
       .eq('id', input.applicationId)
       .maybeSingle()
     if (lookupError) return jsonResponse(500, { error: 'Could not load application' })
@@ -65,10 +65,10 @@ export default {
 
     let config
     try {
-      config = getPaystackConfig()
+      config = getAllPaysConfig()
     } catch (error) {
-      console.error('Invalid Paystack configuration:', error.message)
-      return jsonResponse(503, { error: 'Checkout is not configured; check Paystack credentials and supported currency' })
+      console.error('Invalid AllPays configuration:', error.message)
+      return jsonResponse(503, { error: 'Checkout is not configured; check the Polygon address, currency, and amount settings' })
     }
 
     const reference = createMembershipPaymentReference()
@@ -79,6 +79,8 @@ export default {
         payment_status: 'pending',
         payment_reference: reference,
         payment_checkout_url: null,
+        payment_provider_id: null,
+        payment_provider_secret: null,
         payment_checkout_started_at: checkoutStartedAt,
         payment_amount: config.amount,
         payment_currency: config.currency,
@@ -108,18 +110,19 @@ export default {
     let checkout
     try {
       checkout = await initializeMembershipCheckout({
-        email,
         applicationId: application.id,
         requestUrl: request.url,
         reference,
       })
     } catch (error) {
-      console.error('Could not create Paystack checkout:', error.message)
+      console.error('Could not create AllPays checkout:', error.message)
       await supabase.from('team_applications')
         .update({
           payment_status: 'not_due',
           payment_reference: null,
           payment_checkout_url: null,
+          payment_provider_id: null,
+          payment_provider_secret: null,
           payment_checkout_started_at: null,
           payment_amount: null,
           payment_currency: null,
@@ -131,7 +134,11 @@ export default {
 
     const { data: saved, error: saveError } = await supabase
       .from('team_applications')
-      .update({ payment_checkout_url: checkout.authorizationUrl })
+      .update({
+        payment_checkout_url: checkout.authorizationUrl,
+        payment_provider_id: checkout.paymentId,
+        payment_provider_secret: checkout.paymentSecret,
+      })
       .eq('id', application.id)
       .eq('payment_reference', reference)
       .eq('payment_status', 'pending')

@@ -1,4 +1,4 @@
-import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 
 export function jsonResponse(status, body) {
@@ -42,94 +42,105 @@ export async function requireAdmin(request) {
   return { supabase, user: data.user }
 }
 
-export function getPaystackConfig() {
-  const secretKey = process.env.PAYSTACK_SECRET_KEY
-  const currency = (process.env.PAYSTACK_CURRENCY || 'USD').toUpperCase()
-  const amount = Number(process.env.PAYSTACK_MEMBERSHIP_AMOUNT_SUBUNIT || '5000')
-  if (!secretKey || !/^sk_(test|live)_/.test(secretKey)) {
-    throw new Error('A valid Paystack secret key is not configured')
+const allPaysCurrencies = new Set([
+  'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF', 'NOK', 'SEK', 'DKK',
+  'RUB', 'UAH', 'KZT', 'UZS', 'TRY', 'SGD', 'HKD', 'THB',
+])
+
+export function getAllPaysConfig() {
+  const polygonAddress = process.env.ALLPAYS_POLYGON_ADDRESS || ''
+  const currency = (process.env.ALLPAYS_CURRENCY || 'USD').toUpperCase()
+  const amount = Number(process.env.ALLPAYS_MEMBERSHIP_AMOUNT || '50')
+  const feePayer = process.env.ALLPAYS_FEE_PAYER || 'merchant'
+
+  if (!/^0x[a-fA-F0-9]{40}$/.test(polygonAddress)) {
+    throw new Error('A valid Polygon settlement address is not configured')
   }
-  if (!/^[A-Z]{3}$/.test(currency) || !Number.isSafeInteger(amount) || amount <= 0) {
-    throw new Error('Paystack currency or membership amount is invalid')
+  if (!allPaysCurrencies.has(currency)) throw new Error('AllPays does not list this settlement currency')
+  if (!Number.isFinite(amount) || amount <= 10) throw new Error('AllPays requires a fixed amount greater than 10')
+  if (!['customer', 'merchant'].includes(feePayer)) throw new Error('Invalid AllPays fee payer setting')
+  if (process.env.VERCEL_ENV === 'production' && (currency !== 'USD' || amount !== 50)) {
+    throw new Error('Production membership checkout is fixed at USD 50.00')
   }
-  const isTestKey = secretKey.startsWith('sk_test_')
-  if (process.env.VERCEL_ENV === 'production' && isTestKey) {
-    throw new Error('Vercel production must use the Paystack live key')
-  }
-  if (process.env.VERCEL_ENV === 'preview' && !isTestKey) {
-    throw new Error('Vercel preview deployments must use the Paystack test key')
-  }
-  if (!isTestKey && (currency !== 'USD' || amount !== 5000)) {
-    throw new Error('Live team membership checkout is fixed at USD 50.00')
-  }
-  return { secretKey, currency, amount }
+
+  return { polygonAddress, currency, amount, feePayer }
 }
 
 export function createMembershipPaymentReference() {
   return `AIEMEM_${randomUUID().replaceAll('-', '')}`
 }
 
-export async function initializeMembershipCheckout({ email, applicationId, requestUrl, reference = createMembershipPaymentReference() }) {
-  const config = getPaystackConfig()
-  const callbackUrl = new URL('/payment/return', requestUrl).toString()
-  const response = await fetch('https://api.paystack.co/transaction/initialize', {
+export async function initializeMembershipCheckout({ applicationId, requestUrl, reference = createMembershipPaymentReference() }) {
+  const config = getAllPaysConfig()
+  const callbackUrl = new URL('/api/allpays-callback', requestUrl)
+  callbackUrl.searchParams.set('reference', reference)
+  const response = await fetch('https://api.allpays.co/v1/payments', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${config.secretKey}`,
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
     body: JSON.stringify({
-      email,
-      amount: String(config.amount),
+      polygon_address: config.polygonAddress,
       currency: config.currency,
-      reference,
-      callback_url: callbackUrl,
-      metadata: { application_id: applicationId, purpose: 'team_membership' },
+      amount: config.amount,
+      amount_editable: false,
+      fee_payer: config.feePayer,
+      callback_url: callbackUrl.toString(),
     }),
   })
 
   const result = await response.json().catch(() => null)
-  if (!response.ok || !result?.status || !result.data?.authorization_url) {
-    console.error('Paystack transaction initialization failed:', result?.message || response.status)
-    throw new Error('Paystack could not create the checkout session')
+  const data = result?.data
+  if (!response.ok || result?.success !== true || !data?.payment_id || !data?.payment_secret || !data?.hosted_payment_url) {
+    console.error('AllPays payment-link creation failed:', result?.error || response.status)
+    throw new Error('AllPays could not create the payment link')
+  }
+  const hostedUrl = new URL(data.hosted_payment_url)
+  if (hostedUrl.protocol !== 'https:' || !['allpays.co', 'www.allpays.co'].includes(hostedUrl.hostname)) {
+    throw new Error('AllPays returned an unexpected checkout URL')
   }
 
   return {
     reference,
-    authorizationUrl: result.data.authorization_url,
+    paymentId: data.payment_id,
+    paymentSecret: data.payment_secret,
+    authorizationUrl: hostedUrl.toString(),
     amount: config.amount,
     currency: config.currency,
+    feePayer: config.feePayer,
   }
 }
 
-export async function verifyPaystackTransaction(reference) {
-  const { secretKey } = getPaystackConfig()
-  const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-    headers: { Authorization: `Bearer ${secretKey}`, Accept: 'application/json' },
+export async function getAllPaysPaymentDetails(paymentId, paymentSecret) {
+  if (!paymentId || !paymentSecret) throw new Error('AllPays payment verification details are missing')
+  const response = await fetch(`https://api.allpays.co/v1/payments/${encodeURIComponent(paymentId)}`, {
+    headers: { 'X-Payment-Secret': paymentSecret, Accept: 'application/json' },
   })
   const result = await response.json().catch(() => null)
-  if (!response.ok || !result?.status || !result.data) {
-    throw new Error('Paystack could not verify the transaction')
+  if (!response.ok || result?.success !== true || !result.data?.payment || !Array.isArray(result.data.attempts)) {
+    throw new Error('AllPays could not verify the payment link')
   }
+  if (result.data.payment.payment_id !== paymentId) throw new Error('AllPays payment link does not match')
   return result.data
 }
 
-export function isValidPaystackSignature(rawBody, signature, secretKey) {
-  if (!signature || !/^[a-f0-9]{128}$/i.test(signature) || !secretKey) return false
-  const expected = createHmac('sha512', secretKey).update(rawBody).digest('hex')
-  const expectedBuffer = Buffer.from(expected, 'hex')
-  const receivedBuffer = Buffer.from(signature, 'hex')
-  return expectedBuffer.length === receivedBuffer.length && timingSafeEqual(expectedBuffer, receivedBuffer)
+export async function getAllPaysPaymentAttempt({ paymentId, paymentSecret, attemptHash }) {
+  if (!attemptHash) throw new Error('AllPays payment attempt is missing')
+  const details = await getAllPaysPaymentDetails(paymentId, paymentSecret)
+  const attempt = details.attempts.find((item) => item.pay_request_hash === attemptHash)
+  if (!attempt) throw new Error('AllPays payment attempt was not found')
+  return attempt
 }
 
-export function isSuccessfulMembershipPayment(transaction, application) {
-  return transaction.status === 'success'
-    && transaction.reference === application.payment_reference
-    && Number(transaction.amount) === Number(application.payment_amount)
-    && transaction.currency === application.payment_currency
-    && transaction.metadata?.purpose === 'team_membership'
-    && transaction.metadata?.application_id === application.id
+export function isSuccessfulMembershipPayment(attempt, application) {
+  return attempt.status === 'completed'
+    && Number(attempt.amount) === Number(application.payment_amount)
+    && attempt.currency === application.payment_currency
+    && typeof attempt.email === 'string'
+    && attempt.email.toLowerCase() === application.data?.email?.toLowerCase()
+    && attempt.amount_match?.checkout === 'exact'
+    && attempt.amount_match?.merchant === 'exact'
 }
 
 export async function markMembershipPaid(supabase, application) {
@@ -161,4 +172,8 @@ export async function markMembershipPaid(supabase, application) {
       .in('id', profiles.map((profile) => profile.id))
     if (error) throw new Error('Could not activate the member profile')
   }
+}
+
+export function findSuccessfulAllPaysAttempt(attempts, application) {
+  return attempts.find((attempt) => isSuccessfulMembershipPayment(attempt, application)) || null
 }
